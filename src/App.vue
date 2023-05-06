@@ -1,98 +1,99 @@
 <template>
-  <div class="app">
-
-    <!-- Шапка -->
-    <header class="header">
-      <nav class="navbar navbar-expand-lg navbar-dark bg-red fixed-top">
-        <a class="navbar-brand" href="#">Логотип</a>
-        <!-- Остальное содержимое шапки -->
-      </nav>
+  <div class="admin-panel">
+    <header class="header bg-dark fixed-top">
+      <!-- Шапка -->
+      <!-- Вставьте содержимое вашей шапки здесь -->
     </header>
-
-    <div class="container-fluid">
+    <div class="container-fluid admin-main">
       <div class="row">
-
-        <!-- Левое меню -->
-        <div class="col-md-2 bg-yellow left--side" style="position: fixed; height: 100vh; overflow-y: scroll;">
-          <ul>
-            <li><a href="#">Ссылка 1</a></li>
-            <li><a href="#">Ссылка 2</a></li>
-            <li><a href="#">Ссылка 3</a></li>
-
-          </ul>
-        </div>
-
-        <!-- Основной контент -->
-        <div class="col-md-10 content" style="margin-left: 16.66666667%;">
-
-
-          <div class="content1" v-if="activeLink === 'Ссылка 1'">
-            <h1>hi guys</h1>
-            <p>Привет</p>
+        <nav class="col-md-2 col-lg-2 d-md-block sidebar">
+          <!-- Левое меню -->
+          <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+              <li class="nav-item">
+                <button class="btn btn-primary tab-btn" @click="changeContent('users')">Таблица пользователей</button>
+              </li>
+              <li class="nav-item">
+                <button class="btn btn-primary tab-btn" @click="changeContent('orders')">Таблица хз чего пока</button>
+              </li>
+              <li class="nav-item">
+                <button class="btn btn-primary tab-btn" @click="changeContent('settings')">Таблица тоже хз чего пока</button>
+              </li>
+            </ul>
           </div>
-
-
-          <div class="content2" v-else-if="activeLink === 'Ссылка 2'">
-           <h1>т чмо</h1>
+        </nav>
+        <main class="col-md-10 col-lg-10 ms-sm-auto px-md-4 main">
+          <!-- Основной контент -->
+          <div v-if="currentContent === 'users'">
+            <UsersTable/>
           </div>
-
-
-          <div class="content3" v-else-if="activeLink === 'Ссылка 3'">
-            <table class="table">
-              <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Имя</th>
-                <th scope="col">Фамилия</th>
-                <th scope="col">Обращение</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <th scope="row">1</th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              </tbody>
-            </table>
+          <div v-if="currentContent === 'orders'">
+            <p>Заказы</p>
           </div>
-
-
-        </div>
-
-
+          <div v-if="currentContent === 'settings'">
+            <p>Настройки</p>
+          </div>
+        </main>
       </div>
     </div>
-
   </div>
 </template>
 
 <script>
+import UsersTable from "@/components/UsersTable.vue";
+
 export default {
+  components: {
+    UsersTable
+  },
   data() {
     return {
-      activeLink: 'Ссылка 1',
-    };
+      currentContent: 'users',
+    }
   },
-  mounted() {
-    const links = document.querySelectorAll('.bg-yellow a');
-    links.forEach((link) => {
-      link.addEventListener('click', (event) => {
-        this.activeLink = event.target.textContent;
-      });
-    });
-  },
-};
-
+  methods: {
+    changeContent(content) {
+      this.currentContent = content;
+    }
+  }
+}
 </script>
 
 <style>
-.header {
-  height: 100px;
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
-  .container-fluid {
-  }
+.sidebar {
+  padding: 0;
+  margin: 0;
+  position: fixed;
+}
+.nav {
+  gap: 20px;
+  padding-top: 40px;
+}
+.header {
+  height: 200px;
+}
+.sidebar {
+  height: 100%;
+}
+.admin-main {
+  margin-top: 200px;
+}
+.tab-btn {
+  width: 100%;
+}
+.kek {
+  width: 50px;
+  height: 50px;
+  margin-top: 1500px;
+  border-radius: 300px;
+  background-color: red;
+}
+.main {
+  padding-top: 40px;/* ширина левого меню + отступы */
+}
 </style>
-
-
