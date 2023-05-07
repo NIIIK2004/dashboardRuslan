@@ -1,9 +1,20 @@
 <template>
   <div>
     <h1>Таблица пользователей</h1>
+         <label for="filter-select">Фильтр:</label>
+        <select id="filter-select" class="form-control" v-model="filter">
+          <option value="all">Все</option>
+          <option value="admin" selected>Администраторы</option>
+          <option value="user">Пользователи</option>
+          <option value="teacher">Преподаватели</option>
+        </select>
+
+  <input class="form-control mr-sm-2" type="search" placeholder="Поиск" aria-label="Поиск" v-model="query">
+
     <div class="button-bar" v-show="selectedUser">
       <button @click="blockUser" type="button" class="btn btn-danger button-bar-btn">Заблокировать</button>
       <button @click="editUser" type="button" class="btn btn-primary button-bar-btn">Редактировать данные</button>
+      <button @click="deleteUser" type="button" class="btn btn-dark button-bar-btn">Удалить пользователя</button>
     </div>
     <table class="table">
       <thead>
@@ -23,9 +34,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(user, index) in users" :key="user.id"
-          :class="{ 'selected': user.id === selectedUser }"
-          @click="selectUser(user.id)">
+        <tr v-for="(user, index) in filteredUsers" :key="user.id"
+            :class="{ 'selected': user.id === selectedUser }"
+            @click="selectUser(user.id)">
+
           <td>{{ index + 1 }}</td>
           <td>{{ user.id }}</td>
           <td>{{ user.name }}</td>
@@ -56,29 +68,65 @@
 </template>
 
 <script>
+import axios from 'axios';
+
+const instance = axios.create({
+  baseURL: '',
+});
+
 export default {
-  data() {
-    return {
-      users: [],
-      selectedUser: null,
-      buttonBarVisible: false
-    };
-  },
-  created() {
-    fetch("/api/user/all", {
-      target: "http://localhost:8081"
+data() {
+  return {
+    users: [],
+    selectedUser: null,
+    buttonBarVisible: false,
+    query: '',
+    filter: 'ADMIN' // set default filter value to 'ADMIN'
+  };
+},
+ created() {
+  this.filter = 'admin';
+  const searchQuery = new URLSearchParams(window.location.search).get('q');
+  if (searchQuery) {
+    this.searchQuery = searchQuery;
+  }
+
+  fetch(`http://localhost:8080/api/user/all?q=${this.searchQuery}`)
+    .then((response) => response.json())
+    .then((data) => {
+      this.users = data.data;
     })
-      .then((response) => response.json())
-      .then((data) => {
-        this.users = data.data;
-      })
-      .catch((error) => console.log(error));
-  },
+    .catch((error) => console.log(error));
+},
+  computed: {
+  filteredUsers() {
+  if (this.filter === 'all') {
+    return this.users;
+  } else {
+    return this.users.filter(user => {
+      if (this.filter === 'admin') {
+        return user.roles.includes('ADMIN');
+      } else {
+        return user.roles.includes(this.filter.toUpperCase());
+      }
+    });
+  }
+},
+},
   methods: {
     selectUser(user) {
-      this.selectedUser = user;
-      this.buttonBarVisible = true;
-    },
+  this.selectedUser = user;
+  this.buttonBarVisible = true;
+  const selectedUser = this.users.find(u => u.id === user);
+  const blockBtn = document.querySelector('.button-bar-btn.btn-danger');
+  if (selectedUser.active) {
+    blockBtn.textContent = 'Заблокировать';
+  } else {
+    blockBtn.textContent = 'Разблокировать';
+  }
+  const selectedUser2 = Object.assign({}, selectedUser);
+  console.log(selectedUser2.email); // выводим малышей в консоль для проверки
+},
     unselectUser() {
       this.selectedUser = null;
       this.buttonBarVisible = false;
@@ -86,21 +134,44 @@ export default {
     isUserSelected(user) {
       return this.selectedUser && user.id === this.selectedUser.id;
     },
- blockUser() {
+blockUser() {
   if (this.selectedUser) {
-    console.log(this.selectedUser);
-    if (confirm(`Вы уверены, что хотите заблокировать пользователя ${this.selectedUser}?`)) {
-      // выполнить фактическую блокировку пользователя здесь
-      // обновить статус пользователя в базе данных
-      alert('Пользователь заблокирован!');
-      this.selectedUser = null; // сбросить выбор
-      this.buttonBarVisible = false; // скрыть панель кнопок
+    const selectedUser = this.users.find(u => u.id === this.selectedUser);
+    const action = selectedUser.active ? 'ban' : 'unban';
+    const confirmationText = selectedUser.active ? `Вы уверены, что хотите заблокировать пользователя ${this.selectedUser}?` : `Вы уверены, что хотите разблокировать пользователя ${this.selectedUser}?`;
+    if (confirm(confirmationText)) {
+      const data = {
+        id: this.selectedUser,
+      };
+      instance.post(`http://localhost:8080/api/user/${action}`, data)
+        .then(response => {
+          alert(response.data.message);
+
+          // Обновляем данные
+          fetch("http://localhost:8080/api/user/all")
+            .then((response) => response.json())
+            .then((data) => {
+              this.users = data.data;
+            })
+            .catch((error) => console.log(error));
+
+          this.selectedUser = null;
+          this.buttonBarVisible = false;
+          const blockBtn = document.querySelector('.button-bar-btn.btn-danger');
+          blockBtn.textContent = 'Заблокировать';
+        })
+        .catch(error => {
+          alert(error.response.data.message);
+        });
     }
   }
 },
     editUser() {
       // TODO: implement edit user functionality
       alert('User edit!');
+    },
+    deleteUser() {
+      alert('User deleted!');
     }
   }
 };
